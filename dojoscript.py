@@ -22,7 +22,7 @@ def main():
         sys.exit(1)
 
     # DefectDojo URL ve kimlik doğrulama bilgileri
-    url = "http://localhost:8080/api/v2/import-scan/"
+    url = "https://defectdojo.sametalkis.me/api/v2/import-scan/"
 
     # GitHub Actions'dan gelecek token bilgisini ortam değişkeninden okuyun
     token = os.environ.get("DEFECTDOJO_API_TOKEN")
