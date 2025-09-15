@@ -1,0 +1,48 @@
+name: Security
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write # Needed to upload SARIF results
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+
+    - name: Install Semgrep
+      run: pip install semgrep
+
+    - name: Run Semgrep
+      run: semgrep scan --config "p/juice-shop" --sarif --output semgrep.sarif
+
+    - name: Upload SARIF to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: semgrep.sarif
+
+    - name: Build the Docker image
+      run: docker build . --file Dockerfile --tag juice-shop:latest
+
+    - name: Generate SBOM from Docker image
+      uses: anchore/sbom-action@v0
+      with:
+        image: "juice-shop:latest"
+        format: 'spdx-json'
+        output-file: 'sbom.spdx.json'
+
+    - name: Upload SBOM
+      uses: actions/upload-artifact@v4
+      with:
+        name: sbom
+        path: 'sbom.spdx.json'
