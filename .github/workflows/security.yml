@@ -7,7 +7,7 @@ on:
     branches: [ master ]
 
 jobs:
-  security:
+  Sast-scan:
     runs-on: ubuntu-latest
     permissions:
       security-events: write # Needed to upload SARIF results
@@ -46,3 +46,35 @@ jobs:
       with:
         name: sbom
         path: 'sbom.spdx.json'
+
+  Gitleaks-scan:
+    name: Gitleaks (Secret)
+    needs: Sast-scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: SecretScan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: true
+          GITLEAKS_ENABLE_SUMMARY: true
+          GITLEAKS_REPORT_FORMAT: sarif
+          GITLEAKS_REPORT_PATH: gitleaks-report.sarif
+        continue-on-error: true
+
+      - name: Upload SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'gitleaks-report.sarif'
+
+      - name: Upload gitleaks artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gitleaks-report
+          path: gitleaks-report.sarif
